@@ -16,3 +16,12 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 server:
   port: 8080
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: chronos-collector-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
