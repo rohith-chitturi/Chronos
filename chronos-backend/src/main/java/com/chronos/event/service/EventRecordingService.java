@@ -22,6 +22,11 @@ public class EventRecordingService {
 
     @Transactional
     public EventDto recordEvent(EventRecordDto dto) {
+        // Idempotency check
+        if (dto.getEventId() != null && eventRepository.existsById(dto.getEventId())) {
+            return mapToDto(eventRepository.findById(dto.getEventId()).get());
+        }
+
         // Validate timeline exists
         timelineRepository.findById(dto.getTimelineId())
                 .orElseThrow(() -> new RuntimeException("Timeline not found"));
@@ -32,6 +37,7 @@ public class EventRecordingService {
 
         // Immutable event creation
         SystemEvent event = SystemEvent.builder()
+                .id(dto.getEventId()) // Use provided eventId if any
                 .timelineId(dto.getTimelineId())
                 .sequenceNumber(nextSequence)
                 .timestamp(dto.getTimestamp())

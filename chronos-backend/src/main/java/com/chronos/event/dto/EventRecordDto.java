@@ -8,6 +8,8 @@ import java.util.UUID;
 
 @Data
 public class EventRecordDto {
+    private UUID eventId; // Added for idempotency
+
     @NotNull(message = "Timeline ID is required")
     private UUID timelineId;
 
