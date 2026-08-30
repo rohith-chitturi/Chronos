@@ -2,10 +2,12 @@ package com.chronos.event.service;
 
 import com.chronos.event.dto.EventDto;
 import com.chronos.event.dto.EventRecordDto;
+import com.chronos.event.dto.SystemEventSavedEvent;
 import com.chronos.event.entity.SystemEvent;
 import com.chronos.event.repository.SystemEventRepository;
 import com.chronos.timeline.repository.TimelineRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ public class EventRecordingService {
 
     private final SystemEventRepository eventRepository;
     private final TimelineRepository timelineRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public EventDto recordEvent(EventRecordDto dto) {
@@ -52,6 +55,10 @@ public class EventRecordingService {
                 .build();
 
         event = eventRepository.save(event);
+        
+        // Publish event for asynchronous causality processing in Neo4j
+        eventPublisher.publishEvent(new SystemEventSavedEvent(event));
+
         return mapToDto(event);
     }
 
