@@ -20,42 +20,15 @@ public class StateReconstructionService {
     private final TimelineRepository timelineRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final TimelineLineageResolver lineageResolver;
+
     public Map<String, ObjectNode> reconstructState(UUID timelineId, Long upToSequence) {
         Timeline timeline = timelineRepository.findById(timelineId)
                 .orElseThrow(() -> new RuntimeException("Timeline not found"));
 
-        List<SystemEvent> logicalEventStream = getLogicalEventStream(timeline, upToSequence);
+        List<SystemEvent> logicalEventStream = lineageResolver.resolveHistory(timeline, upToSequence);
         
         return replayEvents(logicalEventStream);
-    }
-
-    private List<SystemEvent> getLogicalEventStream(Timeline timeline, Long upToSequence) {
-        List<SystemEvent> stream = new ArrayList<>();
-
-        if (timeline.getParentTimelineId() != null && timeline.getForkEventId() != null) {
-            // It's a forked timeline. Get parent events up to the fork event.
-            SystemEvent forkEvent = eventRepository.findById(timeline.getForkEventId())
-                    .orElseThrow(() -> new RuntimeException("Fork event not found"));
-            
-            List<SystemEvent> parentEvents = eventRepository.findByTimelineIdAndSequenceNumberLessThanEqualOrderBySequenceNumberAsc(
-                    timeline.getParentTimelineId(), forkEvent.getSequenceNumber());
-            stream.addAll(parentEvents);
-        }
-
-        // Get this timeline's events
-        List<SystemEvent> currentEvents;
-        if (upToSequence != null) {
-            currentEvents = eventRepository.findByTimelineIdAndSequenceNumberLessThanEqualOrderBySequenceNumberAsc(
-                    timeline.getId(), upToSequence);
-        } else {
-            currentEvents = eventRepository.findByTimelineIdOrderBySequenceNumberAsc(timeline.getId());
-        }
-        
-        stream.addAll(currentEvents);
-        
-        // Sort by timestamp just in case, though sequence number within timeline + logical parent ordering should be sufficient
-        stream.sort(Comparator.comparing(SystemEvent::getTimestamp).thenComparing(SystemEvent::getSequenceNumber));
-        return stream;
     }
 
     private Map<String, ObjectNode> replayEvents(List<SystemEvent> events) {
