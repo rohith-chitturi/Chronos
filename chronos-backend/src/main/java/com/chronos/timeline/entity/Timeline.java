@@ -3,8 +3,11 @@ package com.chronos.timeline.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -39,4 +42,14 @@ public class Timeline {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TimelineStatus status;
+
+    @Column(name = "seed")
+    private Long seed;
+
+    @Column(name = "execution_mode")
+    private String executionMode;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "removed_fault_ids", columnDefinition = "jsonb")
+    private List<String> removedFaultIds;
 }
