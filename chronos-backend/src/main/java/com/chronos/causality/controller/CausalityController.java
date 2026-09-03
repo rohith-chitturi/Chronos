@@ -20,6 +20,13 @@ import java.util.stream.Collectors;
 public class CausalityController {
 
     private final EventNodeRepository eventNodeRepository;
+    private final com.chronos.causality.service.GraphRebuildService graphRebuildService;
+
+    @PostMapping("/rebuild")
+    public ResponseEntity<Void> rebuildGraph() {
+        graphRebuildService.rebuildGraph();
+        return ResponseEntity.ok().build();
+    }
 
     @GetMapping("/timelines/{timelineId}/causality")
     public ResponseEntity<List<EventNode>> getTimelineCausality(@PathVariable UUID timelineId) {

@@ -1,139 +1,78 @@
-# Chronos: Temporal Distributed Systems Debugger & What-If Simulator
+# Chronos
 
-**Chronos** is a web-based distributed-systems laboratory that acts as a temporal execution engine. It records the complete event history of a distributed application, dynamically reconstructs its state at any point in time through deterministic replay, and allows developers to branch timelines from historical points to run alternate "what-if" simulations.
+> A temporal distributed-systems debugger that captures immutable event histories, reconstructs causal failures, and deterministically replays counterfactual executions.
 
----
+**Chronos lets engineers investigate what happened, understand why it happened, and experimentally determine what would have happened if the failure had never occurred.**
 
-## 🎯 The Core Problem
+## The Vision
 
-Traditional debugging and observability tools primarily expose **current state** (e.g., `Order #101 = CANCELLED`). But developers in distributed systems often need to answer complex causal questions:
+Modern distributed systems are incredibly difficult to debug because failures cascade across multiple asynchronous boundaries. Traditional monitoring tells you *that* a system failed. Distributed tracing tells you *where* it failed.
 
-- *Why did it become CANCELLED?*
-- *What happened immediately before it?*
-- *What was the exact system state 30 seconds earlier?*
-- *Which specific service caused the failure?*
-- ***What would have happened if that failure had not occurred?***
+Chronos answers the ultimate debugging questions:
+- **WHAT happened?** (Temporal Event History)
+- **WHERE did it happen?** (Distributed Event Capture)
+- **WHY did it happen?** (Causal Graph Reconstruction)
+- **CAN I deliberately cause it?** (Failure Injection)
+- **WHAT WOULD HAVE HAPPENED OTHERWISE?** (Counterfactual Replay)
 
-Chronos answers these questions by allowing you to travel through the execution timeline, branch off from historical events, modify conditions, and replay alternate execution paths.
+## Core Architecture
 
----
+Chronos observes your distributed system by capturing events from Kafka. It stores them immutably in PostgreSQL as the absolute source of truth, and asynchronously builds a Causal Graph in Neo4j to explain relationships. 
 
-## 🏗️ Core Operations
-
-Everything in Chronos revolves around four primary operations:
-
-1. **RECORD**: Capture immutable events as they happen across distributed services (e.g., `ORDER_CREATED`, `PAYMENT_STARTED`, `INVENTORY_RESERVED`).
-2. **RECONSTRUCT**: Given an exact timestamp or event sequence number, deterministically rebuild the system state by replaying history up to that point. Stored state is *never* the source of truth—state is strictly a derivation of history.
-3. **REPLAY**: Restart execution from any historical state to observe the exact flow of causality.
-4. **FORK**: Branch a timeline. Create an alternate history (a child timeline) starting from a specific event, inject a modified condition, and compare the resulting state against the main timeline.
-
----
-
-## 📐 Architecture
-
-Chronos is currently in its initial **Phase 1-4 prototype** stage, focusing strictly on a rock-solid temporal core.
-
-### Current Stack (Phase 1-4 Vertical Slice)
-- **Frontend**: Next.js (React), TypeScript, Tailwind CSS
-- **Backend Control Plane**: Spring Boot 3 (Java 21 LTS)
-- **Database**: PostgreSQL (Leveraging `JSONB` for immutable, flexible event payloads)
-
-### Future Architecture (Phase 5+)
-Once the temporal execution core is thoroughly tested, Chronos will evolve into a full distributed systems debugger:
-- **Event Bus**: Apache Kafka (Observing and collecting the distributed event streams)
-- **Causality Graph**: Neo4j (Mapping exact causal chains and root-cause traversals)
-- **Caching & Ephemeral State**: Redis
-- **Containerization**: Kubernetes / Docker
+When a failure occurs, Chronos allows you to fork the historical timeline, remove the variable that caused the failure, and execute an isolated, deterministic replay to observe the counterfactual outcome.
 
 ```text
-                       ┌──────────────────────┐
-                       │      WEB CLIENT      │
-                       │   Next.js + React    │
-                       └──────────┬───────────┘
-                                  │
-                                  │ REST / WebSocket
-                                  ▼
-                       ┌──────────────────────┐
-                       │   CHRONOS BACKEND    │
-                       │     Spring Boot      │
-                       └──────────┬───────────┘
-                                  │
-              ┌───────────────────┼────────────────────┐
-              │                   │                    │
-              ▼                   ▼                    ▼
-       Timeline Engine       Replay Engine       Causality Engine
-              │                   │                    │
-              └───────────────────┼────────────────────┘
-                                  │
-                    ┌─────────────┼──────────────┐
-                    ▼             ▼              ▼
-               PostgreSQL       Redis          Neo4j
+                FACTS
+                 │
+                 ▼
+            MAIN TIMELINE
+                 │
+              FORK
+                 │
+                 ▼
+        ┌──────────────────┐
+        │ Historical State │
+        └────────┬─────────┘
+                 │
+        + Experiment Rules
+                 │
+                 ▼
+        COUNTERFACTUAL WORLD
+                 │
+               REPLAY
+                 │
+                 ▼
+          NEW EVENTS
+                 │
+                 ▼
+             NEW STATE
+                 │
+                 ▼
+              COMPARE
 ```
 
----
+## Technical Stack
 
-## 🚀 The E-Commerce Demo Flow
+- **Java 21 + Spring Boot**: Microservices and the core Chronos Engine
+- **Apache Kafka**: Event broker and replay isolation boundary
+- **PostgreSQL**: Immutable event store and timeline lineage (Source of Truth)
+- **Neo4j**: Graph database for causal relationship traversal
+- **Next.js + TypeScript + React Flow**: Counterfactual Studio and Causal Graph visualizer
 
-The best way to understand Chronos is to see it in action via the E-Commerce simulation. 
+## Key Capabilities
 
-**Main Execution Timeline:**
-```
-[T1] ORDER_CREATED -> [T2] PAYMENT_STARTED -> [T3] PAYMENT_SUCCESS -> [T4] INVENTORY_RESERVED
-```
+### 1. Deterministic Counterfactuals
+Chronos allows you to create nested experiments (`MAIN` → `EXP-001` → `EXP-002`) without ever mutating historical facts. The logical timeline lineage resolver dynamically composes history, allowing identical forks to execute identically down to the final causal topology.
 
-**Developer Question:** *"What would happen if the Payment Service failed at T3 instead?"*
+### 2. Resilience and Source of Truth
+Chronos is designed such that PostgreSQL is the absolute source of truth. If Neo4j goes down, Chronos continues to capture events normally. When Neo4j recovers, the entire graph can be deterministically rebuilt from the immutable facts stored in PostgreSQL via the `/api/causality/rebuild` endpoint.
 
-**The Chronos Solution:**
-1. Open the **E-Commerce Demo** timeline.
-2. Select event `PAYMENT_STARTED` and view the reconstructed state.
-3. Click **Fork Timeline**.
-4. Inject the alternate event (`PAYMENT_FAILED`).
-5. Replay the simulation in the new child timeline.
-6. Chronos automatically derives the alternate future:
-```
-[T1] ORDER_CREATED -> [T2] PAYMENT_STARTED -> [T3] PAYMENT_FAILED -> [T4] ORDER_CANCELLED
-```
-7. Visually compare the state differences side-by-side.
+### 3. Fault Injection
+Inject `LATENCY`, `DROP`, `DUPLICATE`, or `CRASH` faults directly into the execution flow to deliberately trigger and observe cascading failures.
 
----
+### 4. Counterfactual Studio
+A visual interface that compares the real execution (e.g., `FAILED`) against the counterfactual execution (e.g., `COMPLETED`), clearly highlighting the point of divergence, the removed cause, and the deterministic evidence.
 
-## 🛠️ Project Structure
+## Getting Started
 
-The repository is organized into two primary applications:
-
-### `chronos-backend/`
-The Spring Boot control plane and execution engine.
-- **`timeline/`**: Manages the lifecycle of timelines, including logical forking (parent-child relationship).
-- **`event/`**: Records immutable `SystemEvent` entities. Provides the `StateReconstructionService` which merges JSON payloads across the event history to dynamically derive aggregate state.
-
-### `chronos-frontend/`
-The Next.js React client providing the visualization layer.
-- **`Dashboard`**: High-level overview of environments, total timelines, and event counts.
-- **`Timeline Visualizer`**: An interactive UI to travel back in time, inspect event payloads, view deterministic state reconstruction, and run what-if simulations.
-
----
-
-## 💻 Getting Started (Local Development)
-
-### 1. Start the Database
-Ensure Docker is installed and running.
-```bash
-docker-compose up -d
-```
-
-### 2. Start the Spring Boot Backend
-Requires Java 21 LTS.
-```bash
-cd chronos-backend
-./gradlew bootRun
-```
-
-### 3. Start the Next.js Frontend
-Requires Node.js.
-```bash
-cd chronos-frontend
-npm install
-npm run dev
-```
-
-Navigate to `http://localhost:3000` to access the Chronos dashboard and explore the Temporal Engine!
+*(Instructions for running the Docker Compose cluster and starting the microservices)*
