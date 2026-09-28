@@ -22,7 +22,11 @@ public class CausalityProcessor {
     @EventListener
     @Transactional
     public void processCausality(SystemEventSavedEvent eventPayload) {
-        SystemEvent systemEvent = eventPayload.getSystemEvent();
+        processEvent(eventPayload.getSystemEvent());
+    }
+
+    @Transactional
+    public void processEvent(SystemEvent systemEvent) {
         log.info("Processing causality for event ID: {}", systemEvent.getId());
 
         try {

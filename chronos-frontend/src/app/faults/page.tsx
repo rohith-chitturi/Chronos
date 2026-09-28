@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Plus, Power, ServerCrash, RotateCw, Activity, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Plus, Power, ServerCrash, RotateCw, Activity, ShieldAlert, CheckCircle } from "lucide-react";
 
 export default function FaultInjectionConsole() {
   const [activeFaults, setActiveFaults] = useState<any[]>([
