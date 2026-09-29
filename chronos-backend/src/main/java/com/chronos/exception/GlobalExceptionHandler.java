@@ -11,6 +11,13 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(com.chronos.investigation.exception.InvalidInvestigationException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidInvestigationException(com.chronos.investigation.exception.InvalidInvestigationException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", "AI Validation Failed: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
         Map<String, String> body = new HashMap<>();
