@@ -18,6 +18,7 @@ public class IncidentController {
 
     private final IncidentAnalyzerService incidentAnalyzerService;
     private final com.chronos.investigation.service.AiInvestigatorService aiInvestigatorService;
+    private final com.chronos.investigation.validation.InvestigationReportValidator validator;
 
     @GetMapping("/analyze")
     public ResponseEntity<IncidentReport> analyzeIncident(@RequestParam UUID eventId) {
@@ -27,6 +28,8 @@ public class IncidentController {
     @org.springframework.web.bind.annotation.PostMapping("/investigate")
     public ResponseEntity<com.chronos.investigation.dto.InvestigationReport> investigateIncident(@RequestParam UUID eventId) {
         IncidentReport report = incidentAnalyzerService.analyzeIncident(eventId);
-        return ResponseEntity.ok(aiInvestigatorService.investigate(report));
+        com.chronos.investigation.dto.InvestigationReport investigation = aiInvestigatorService.investigate(report);
+        validator.validate(investigation, report);
+        return ResponseEntity.ok(investigation);
     }
 }
