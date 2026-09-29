@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Clock, Activity, CheckCircle, XCircle, FileText, Zap, ShieldAlert, AlertCircle } from "lucide-react";
+import { AlertTriangle, Clock, Activity, CheckCircle, XCircle, FileText, Zap, ShieldAlert, AlertCircle, Search } from "lucide-react";
 
 export default function IncidentReportPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<any>(null);
+  const [investigation, setInvestigation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [investigating, setInvestigating] = useState(true);
 
   useEffect(() => {
-    // In a real app, we would fetch from the API:
-    // fetch(`/api/incidents/analyze?eventId=${params.id}`)
-    // For this demonstration, we'll use a timeout to simulate API loading
-    // and provide mock data aligned with Phase 10 requirements.
-    
+    // Phase 10: Deterministic Evidence Dossier
     setTimeout(() => {
       setReport({
         incidentId: "INC-" + params.id.substring(0, 8),
@@ -29,7 +27,7 @@ export default function IncidentReportPage({ params }: { params: { id: string } 
           "ORDER_FAILED"
         ],
         counterfactualProof: {
-          status: "PROVEN", // or NOT_AVAILABLE, AMBIGUOUS
+          status: "PROVEN", // test with AMBIGUOUS or NOT_AVAILABLE
           removedFaults: ["LATENCY-01"],
           whatIfOutcome: "ORDER_COMPLETED",
           realDurationMs: 3500,
@@ -52,11 +50,39 @@ export default function IncidentReportPage({ params }: { params: { id: string } 
         ]
       });
       setLoading(false);
+      
+      // Phase 11: Mock AI Investigator
+      setTimeout(() => {
+        setInvestigation({
+          summary: "The order failed after a fault-induced delay caused the inventory reservation to time out.",
+          facts: [
+            "LATENCY-01 fired on payment-service",
+            "+3000ms observed causal delay",
+            "Inventory timeout logged",
+            "ORDER_FAILED final state"
+          ],
+          inferences: [
+            "The injected latency directly contributed to the failure.",
+            "Removing the fault allowed the workflow to complete successfully."
+          ],
+          unknowns: [
+            "Chronos cannot determine whether the remaining 500ms inter-service delay was network or queue latency."
+          ],
+          evidenceQuality: {
+            evidenceCompleteness: "HIGH",
+            counterfactualValidation: "AVAILABLE",
+            directFaultAttribution: "YES",
+            causalChain: "COMPLETE"
+          }
+        });
+        setInvestigating(false);
+      }, 1500);
+
     }, 1000);
   }, [params.id]);
 
   if (loading) {
-    return <div className="flex h-full items-center justify-center text-slate-400">Loading Incident Analysis...</div>;
+    return <div className="flex h-full items-center justify-center text-slate-400 font-mono"><Search className="mr-2 animate-spin text-indigo-500" /> Gathering Deterministic Evidence...</div>;
   }
 
   return (
@@ -66,7 +92,7 @@ export default function IncidentReportPage({ params }: { params: { id: string } 
           <ShieldAlert className="mr-3 text-rose-500" size={32} />
           {report.incidentId}
           <span className="ml-4 px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-md text-xs font-bold border border-indigo-500/20 uppercase">
-            Phase 10
+            Phase 11
           </span>
         </h1>
         <h2 className="text-xl text-rose-400 font-mono mt-2">{report.outcome}</h2>
@@ -124,7 +150,7 @@ export default function IncidentReportPage({ params }: { params: { id: string } 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
           <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-6">Causal Chain</h3>
           <ul className="space-y-4 relative before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-slate-800">
@@ -170,6 +196,115 @@ export default function IncidentReportPage({ params }: { params: { id: string } 
           </div>
         </div>
       </div>
+
+      {/* PHASE 11: AI INVESTIGATION UI */}
+      <div className="border-t border-slate-800 pt-8 mt-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-black text-white flex items-center">
+              <Zap className="mr-3 text-indigo-500" size={28} />
+              AI INVESTIGATION
+            </h2>
+            <div className="text-xs font-bold text-indigo-400 uppercase mt-2 inline-flex items-center bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">
+              Generated from Chronos evidence
+            </div>
+          </div>
+        </div>
+
+        {investigating ? (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 flex flex-col items-center justify-center text-indigo-400">
+            <Search className="animate-spin mb-4" size={32} />
+            <div className="font-mono text-sm">Reasoning over Deterministic Evidence...</div>
+          </div>
+        ) : investigation ? (
+          <div className="bg-slate-900 border border-indigo-500/30 rounded-xl overflow-hidden shadow-lg shadow-indigo-900/20">
+            <div className="p-6 border-b border-slate-800 bg-slate-950/30">
+              <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-3">Summary</h3>
+              <p className="text-slate-200 text-lg leading-relaxed">{investigation.summary}</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              <div className="p-6 border-r border-slate-800 bg-slate-950/10">
+                <h3 className="text-emerald-500 text-xs font-bold uppercase tracking-wider mb-1">Facts</h3>
+                <p className="text-slate-500 text-[10px] uppercase mb-5">Directly observed by Chronos</p>
+                <ul className="space-y-4">
+                  {investigation.facts.map((fact: string, i: number) => (
+                    <li key={i} className="flex items-start text-sm text-slate-300">
+                      <span className="text-emerald-500 mr-3 mt-0.5">•</span> 
+                      <button 
+                        className="text-left hover:text-emerald-400 hover:underline decoration-emerald-500/30 underline-offset-4 transition-colors cursor-pointer group"
+                        title="Click to view original Chronos evidence"
+                      >
+                        {fact}
+                        <span className="inline-block ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Activity size={12} className="text-emerald-500/50" />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="p-6 bg-slate-950/10">
+                <h3 className="text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">Inferences</h3>
+                <p className="text-slate-500 text-[10px] uppercase mb-5">Reasoned from Chronos evidence</p>
+                <ul className="space-y-4">
+                  {investigation.inferences.map((inf: string, i: number) => (
+                    <li key={i} className="flex items-start text-sm text-slate-300">
+                      <span className="text-indigo-400 mr-3 mt-0.5">•</span> 
+                      <button 
+                        className="text-left hover:text-indigo-300 hover:underline decoration-indigo-400/30 underline-offset-4 transition-colors cursor-pointer group"
+                        title="Click to view derived evidence path"
+                      >
+                        {inf}
+                        <span className="inline-block ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Zap size={12} className="text-indigo-400/50" />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-800 bg-slate-950/50">
+              <h3 className="text-amber-500 text-xs font-bold uppercase tracking-wider mb-1">Unknown / Not Established</h3>
+              <p className="text-slate-500 text-[10px] uppercase mb-4">Not established by available evidence</p>
+              <ul className="space-y-3">
+                {investigation.unknowns.map((unk: string, i: number) => (
+                  <li key={i} className="flex items-start text-sm text-slate-400">
+                    <span className="text-amber-500 mr-3 mt-0.5">•</span> 
+                    {unk}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="p-6 border-t border-slate-800 bg-slate-900">
+              <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-4">Evidence Quality Metrics</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div className="text-slate-500 text-[10px] uppercase font-bold mb-1.5">Evidence Completeness</div>
+                  <div className="text-white font-mono text-sm tracking-wide">{investigation.evidenceQuality.evidenceCompleteness}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 text-[10px] uppercase font-bold mb-1.5">Counterfactual Validation</div>
+                  <div className="text-white font-mono text-sm tracking-wide">{investigation.evidenceQuality.counterfactualValidation}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 text-[10px] uppercase font-bold mb-1.5">Direct Fault Attribution</div>
+                  <div className="text-white font-mono text-sm tracking-wide">{investigation.evidenceQuality.directFaultAttribution}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 text-[10px] uppercase font-bold mb-1.5">Causal Chain</div>
+                  <div className="text-white font-mono text-sm tracking-wide">{investigation.evidenceQuality.causalChain}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
     </div>
   );
 }
