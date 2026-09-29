@@ -17,9 +17,16 @@ import java.util.UUID;
 public class IncidentController {
 
     private final IncidentAnalyzerService incidentAnalyzerService;
+    private final com.chronos.investigation.service.AiInvestigatorService aiInvestigatorService;
 
     @GetMapping("/analyze")
     public ResponseEntity<IncidentReport> analyzeIncident(@RequestParam UUID eventId) {
         return ResponseEntity.ok(incidentAnalyzerService.analyzeIncident(eventId));
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/investigate")
+    public ResponseEntity<com.chronos.investigation.dto.InvestigationReport> investigateIncident(@RequestParam UUID eventId) {
+        IncidentReport report = incidentAnalyzerService.analyzeIncident(eventId);
+        return ResponseEntity.ok(aiInvestigatorService.investigate(report));
     }
 }
