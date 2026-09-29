@@ -9,8 +9,8 @@ import java.util.List;
 @Builder
 public class InvestigationReport {
     private String summary;
-    private List<String> facts;
-    private List<String> inferences;
+    private List<Fact> facts;
+    private List<Inference> inferences;
     private List<String> unknowns;
     private EvidenceQuality evidenceQuality;
 }
